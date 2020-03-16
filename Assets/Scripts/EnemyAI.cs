@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Serialization;
 
 public class EnemyAI : MonoBehaviour
 {
@@ -12,12 +13,16 @@ public class EnemyAI : MonoBehaviour
 
     private NavMeshAgent navMeshAgent;
     private float distanceToTarget = Mathf.Infinity;
+    [FormerlySerializedAs("rotSpeed")] [SerializeField] private float turnSpeed = 5f;
 
-    // Start is called before the first frame update
+    public NavMeshAgent GetNavMeshAgent()
+    {
+        return navMeshAgent;
+    }
+    
     void Start()
     {
         navMeshAgent = GetComponent<NavMeshAgent>();
-        
     }
 
     // Update is called once per frame
@@ -25,10 +30,6 @@ public class EnemyAI : MonoBehaviour
     {
         distanceToTarget = Vector3.Distance(target.position, transform.position);
             
-        if (distanceToTarget <= chaseRange)
-        {
-            
-        }
         
         if(isProvoked)
         {
@@ -41,8 +42,15 @@ public class EnemyAI : MonoBehaviour
         
     }
 
+    public void OnDamageTaken()
+    {
+        isProvoked = true;
+    }
+
     private void EngageTarget()
     {
+        FaceTarget();
+        
         if(distanceToTarget >= navMeshAgent.stoppingDistance)
         {
             ChaseTarget();
@@ -56,12 +64,21 @@ public class EnemyAI : MonoBehaviour
 
     private void AttackTarget()
     {
-        print(transform.name + " has seeked and is destroying ");
+        GetComponent<Animator>().SetBool("attack", true);
     }
 
     private void ChaseTarget()
     {
+        GetComponent<Animator>().SetBool("attack", false);
+        GetComponent<Animator>().SetTrigger("move");
         navMeshAgent.SetDestination(target.position);
+    }
+
+    private void FaceTarget()
+    {
+        Vector3 direction = (target.position - transform.position).normalized;
+        Quaternion lookRotation = Quaternion.LookRotation(new Vector3(direction.x, 0, direction.z));
+        this.transform.rotation = Quaternion.Slerp(this.transform.rotation,  lookRotation, turnSpeed);
     }
 
     private void OnDrawGizmosSelected()
